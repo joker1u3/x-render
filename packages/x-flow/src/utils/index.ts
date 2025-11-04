@@ -194,6 +194,25 @@ export const transformNodes = (nodes: any[]) => {
         },
         ...rest,
       };
+    } else if (type === 'Prompt') {
+      // 为“问题分类器/Prompt”类型的 categories 注入稳定的 _id
+      return {
+        type: 'custom',
+        data: {
+          ...data,
+          _nodeType: type,
+          ...(data?.categories?.length && {
+            categories: (data?.categories || [])?.map(c => {
+              if (c?._id) {
+                return c;
+              } else {
+                return { ...c, _id: `id_${uuid()}` };
+              }
+            })
+          })
+        },
+        ...rest,
+      };
     } else {
       return {
         type: 'custom',
@@ -223,6 +242,20 @@ export const transformSwitchNodes = (nodes: any[]) => {
             }
           }),
         },
+      };
+    } else if (item?.type === 'Prompt') {
+      const { categories = [], ...rest } = item?.data || {};
+      return {
+        ...item,
+        data: {
+          ...rest,
+          categories: (categories || [])?.map(c => {
+            if (c?._id) {
+              return c;
+            }
+            return { ...c, _id: `id_${uuid()}` };
+          })
+        }
       };
     } else {
       return item;

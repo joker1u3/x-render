@@ -1,3 +1,5 @@
+import React from 'react';
+
 export const settingSchema = {
   properties: {
     type: 'array',
@@ -200,7 +202,7 @@ export const settings = [
     },
     // 隐藏默认的单一 SourceHandle，改为自定义逐行句柄
     sourceHandleHidden: true,
-    // 分类配置面板：支持动态添加分类
+    // 分类配置面板：支持动态添加分类（仅填写分类名称，ID 自动生成）
     settingSchema: {
       type: 'object',
       className: 'settingSchemaStyle',
@@ -216,19 +218,8 @@ export const settings = [
           items: {
             type: 'object',
             properties: {
-              _id: {
-                title: '分类ID',
-                type: 'string',
-                description: '用于连线句柄的唯一标识',
-                props: { allowClear: true },
-              },
               name: {
                 title: '分类名称',
-                type: 'string',
-                props: { allowClear: true },
-              },
-              value: {
-                title: '描述（可选）',
                 type: 'string',
                 props: { allowClear: true },
               },

@@ -129,6 +129,14 @@ const NodeEditor: FC<INodeEditorProps> = forwardRef((props, ref: any) => {
               // }
             }
           });
+        } else if (node?.data?._nodeType === 'Prompt') {
+          // 为“问题分类器/Prompt”的 categories 注入稳定 _id
+          data['categories'] = (data?.categories || [])?.map((item, index) => {
+            if (item?._id) {
+              return item;
+            }
+            return { ...item, _id: `id_${uuid()}` };
+          });
         }
         const { _nodeType, _status, _isCandidate, title, desc } = node?.data;
         node.data = { _nodeType, _status, _isCandidate, title, desc, ...data }; // form-render的list如果为空，不会返回list相应的字段，只能全部替换data
