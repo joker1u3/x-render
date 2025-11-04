@@ -132,7 +132,7 @@ export const settings = [
   {
     title: '条件判断',
     type: 'Switch',
-    description:'条件判断',
+    description: '条件判断',
     showTestingBtn: true,
     icon: {
       type: 'icon-switch',
@@ -158,12 +158,12 @@ export const settings = [
     title: 'LLM',
     type: 'LLM',
     showTestingBtn: true,
-    description:'LLM',
+    description: 'LLM',
     icon: {
       // type: 'icon-model',
       bgColor: '#1890FF',
     },
-    iconSvg:'CustomSvg',
+    iconSvg: 'CustomSvg',
     settingSchema: {
       type: 'object',
       properties: {
@@ -187,6 +187,102 @@ export const settings = [
           widget: 'slider',
         },
       },
+    },
+  },
+  {
+    title: '问题分类器',
+    type: 'Prompt',
+    showTestingBtn: true,
+    description: '定义问题的分类条件',
+    icon: {
+      type: 'icon-prompt',
+      bgColor: '#875BF7',
+    },
+    // 隐藏默认的单一 SourceHandle，改为自定义逐行句柄
+    sourceHandleHidden: true,
+    // 分类配置面板：支持动态添加分类
+    settingSchema: {
+      type: 'object',
+      className: 'settingSchemaStyle',
+      properties: {
+        categories: {
+          title: '分类列表',
+          type: 'array',
+          widget: 'simpleList',
+          props: {
+            hideCopy: true,
+            hideMove: true,
+          },
+          items: {
+            type: 'object',
+            properties: {
+              _id: {
+                title: '分类ID',
+                type: 'string',
+                description: '用于连线句柄的唯一标识',
+                props: { allowClear: true },
+              },
+              name: {
+                title: '分类名称',
+                type: 'string',
+                props: { allowClear: true },
+              },
+              value: {
+                title: '描述（可选）',
+                type: 'string',
+                props: { allowClear: true },
+              },
+            },
+          },
+        },
+      },
+    },
+    // 行内渲染分类展示与右侧的 SourceHandle（参考内置 node-switch）
+    renderHandle: (
+      SourceHandle,
+      sourceHandleProps,
+      { id: nodeId, data, isConnectable, readOnly }
+    ) => {
+      const categories = Array.isArray(data?.categories) ? data.categories : [];
+      if (!categories.length) return <div style={{ minHeight: 40 }} />;
+
+      // 复用内置 Switch 的样式类，实现“左文案 + 右句柄”的行内布局
+      return (
+        <div className="node-switch-widget" style={{ paddingBottom: 24 }}>
+          {categories.map((item: any, index: number) => {
+            const rawId = String(item?._id ?? `id_${index}`);
+            const handleId = `${nodeId}__${rawId}`; // 保证同一图内全局唯一，避免潜在冲突
+            const title = item?.name ?? `分类${index + 1}`;
+            return (
+              <div
+                className="item-header"
+                key={handleId}
+                style={{
+                  marginBottom: index === categories.length - 1 ? 12 : 6,
+                }}
+              >
+                <div
+                  className="item-title"
+                  title={title}
+                  style={{ paddingRight: 32 }}
+                >
+                  {title}
+                </div>
+                <SourceHandle
+                  {...sourceHandleProps}
+                  id={handleId}
+                  className="item-handle"
+                  style={{ right: 0 }}
+                  isConnectable={Boolean(isConnectable && !readOnly)}
+                  handleAddNode={(nodeData: any) =>
+                    sourceHandleProps.handleAddNode(nodeData, handleId)
+                  }
+                />
+              </div>
+            );
+          })}
+        </div>
+      );
     },
   },
   {
