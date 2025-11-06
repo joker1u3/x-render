@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import XFlow from '@xrenders/xflow';
-import { Button, Space, message } from 'antd';
-import { PlayCircleOutlined, SaveOutlined } from '@ant-design/icons';
+import XFlow, { FlowProvider, useFlow } from '@xrenders/xflow';
+import { Button, Space, message, Modal } from 'antd';
+import { PlayCircleOutlined, SaveOutlined, EyeOutlined, CopyOutlined } from '@ant-design/icons';
 import { settings } from './setting';
 import './index.less';
 import CustomSvg from './CustomSvg';
 
-export default () => {
+const FlowContent = () => {
+  const { getFlowData } = useFlow();
   const [loading, setLoading] = useState(false);
+  const [dataModalVisible, setDataModalVisible] = useState(false);
   const [logList, setLogList] = useState<any[]>([
     {
       nodeId: 'llm',
@@ -111,6 +113,14 @@ export default () => {
     { source: 'format', target: 'end', id: 'e4' },
   ];
 
+  const flowSettings = settings as any;
+  const nodeViewStatus = [
+    { value: 'processing', color: '#1890FF', name: '处理中' },
+    { value: 'success', color: '#52c41a', name: '成功' },
+    { value: 'error', color: '#ff4d4f', name: '失败' },
+    { value: 'warning', color: '#faad14', name: '警告' },
+  ] as any;
+
   // 模拟节点测试
   const handleNodeTest = async (node) => {
     setLoading(true);
@@ -166,28 +176,38 @@ export default () => {
     }
   };
 
+  // 查看数据处理函数
+  const handleViewData = () => {
+    setDataModalVisible(true);
+  };
+
+  // 复制数据到剪贴板
+  const handleCopyData = () => {
+    const flowData = getFlowData();
+    navigator.clipboard.writeText(JSON.stringify(flowData, null, 2))
+      .then(() => message.success('数据已复制到剪贴板'))
+      .catch(() => message.error('复制失败'));
+  };
+
   return (
     <div style={{ height: '600px', position: 'relative' }}>
         <div style={{ height: '600px' }}>
           <XFlow
-            initialValues={{ nodes, edges }}
-            settings={settings}
-            onTesting={handleNodeTest}
-            logPanel={{
-              logList,
-              loading,
-            }}
-            globalConfig={{
-              nodeView: {
-                status: [
-                  { value: 'processing', color: '#1890FF', name: '处理中' },
-                  { value: 'success', color: '#52c41a', name: '成功' },
-                  { value: 'error', color: '#ff4d4f', name: '失败' },
-                  { value: 'warning', color: '#faad14', name: '警告' },
-                ],
+            {...({
+              initialValues: { nodes, edges },
+              settings: flowSettings,
+              onTesting: handleNodeTest,
+              logPanel: {
+                logList,
+                loading,
               },
-            }}
-          widgets={{ CustomSvg }}
+              globalConfig: {
+                nodeView: {
+                  status: nodeViewStatus,
+                },
+              },
+              widgets: { CustomSvg },
+            } as any)}
           />
         </div>
         <Space className="tools">
@@ -195,13 +215,57 @@ export default () => {
             type="primary"
             icon={<PlayCircleOutlined />}
             loading={loading}
-          onClick={runFlow}
-          size="small" className="tools-btn"
+            onClick={runFlow}
+            size="small"
+            className="tools-btn"
           >
             运行流程
           </Button>
-        <Button icon={<SaveOutlined />} size="small" className="tools-btn" >保存流程</Button>
+          <Button
+            icon={<EyeOutlined />}
+            size="small"
+            className="tools-btn"
+            onClick={handleViewData}
+          >
+            查看数据
+          </Button>
+          <Button icon={<SaveOutlined />} size="small" className="tools-btn">
+            保存流程
+          </Button>
         </Space>
+        
+        <Modal
+          title="流程数据"
+          open={dataModalVisible}
+          onCancel={() => setDataModalVisible(false)}
+          width={900}
+          footer={null}
+        >
+          <div>
+            <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ margin: 0 }}>完整数据：</h4>
+              <Button
+                type="primary"
+                size="small"
+                icon={<CopyOutlined />}
+                onClick={handleCopyData}
+              >
+                复制数据
+              </Button>
+            </div>
+            <pre style={{ maxHeight: '500px', overflow: 'auto', background: '#f5f5f5', padding: '12px', borderRadius: '4px' }}>
+              {JSON.stringify(getFlowData(), null, 2)}
+            </pre>
+          </div>
+        </Modal>
     </div>
+  );
+};
+
+export default () => {
+  return (
+    <FlowProvider>
+      <FlowContent />
+    </FlowProvider>
   );
 };
