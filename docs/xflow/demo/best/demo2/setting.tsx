@@ -1,4 +1,72 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { useUpdateNodeInternals } from '@xyflow/react';
+
+const DynamicHandles: React.FC<{
+  nodeId: string;
+  categories: any[];
+  SourceHandle: any;
+  sourceHandleProps: Record<string, any>;
+  isConnectable: boolean;
+  readOnly: boolean;
+}> = ({
+  nodeId,
+  categories,
+  SourceHandle,
+  sourceHandleProps,
+  isConnectable,
+  readOnly,
+}) => {
+  const updateNodeInternals = useUpdateNodeInternals();
+  const handleIdSignature = useMemo(() => {
+    return categories
+      .map((item: any, index: number) => String(item?._id ?? `id_${index}`))
+      .join(',');
+  }, [categories]);
+
+  useEffect(() => {
+    updateNodeInternals(nodeId);
+  }, [updateNodeInternals, nodeId, handleIdSignature]);
+
+  if (!categories.length) {
+    return <div style={{ minHeight: 40 }} />;
+  }
+
+  return (
+    <div className="node-switch-widget" style={{ paddingBottom: 24 }}>
+      {categories.map((item: any, index: number) => {
+        const handleId = String(item?._id ?? `id_${index}`);
+        const title = item?.name ?? `分类${index + 1}`;
+        return (
+          <div
+            className="item-header"
+            key={handleId}
+            style={{
+              marginBottom: index === categories.length - 1 ? 12 : 6,
+            }}
+          >
+            <div
+              className="item-title"
+              title={title}
+              style={{ paddingRight: 32 }}
+            >
+              {title}
+            </div>
+            <SourceHandle
+              {...sourceHandleProps}
+              id={handleId}
+              className="item-handle"
+              style={{ right: 0 }}
+              isConnectable={Boolean(isConnectable && !readOnly)}
+              handleAddNode={(nodeData: any) =>
+                sourceHandleProps.handleAddNode(nodeData, handleId)
+              }
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 export const settingSchema = {
   properties: {
@@ -235,44 +303,16 @@ export const settings = [
       { id: nodeId, data, isConnectable, readOnly }
     ) => {
       const categories = Array.isArray(data?.categories) ? data.categories : [];
-      if (!categories.length) return <div style={{ minHeight: 40 }} />;
 
-      // 复用内置 Switch 的样式类，实现“左文案 + 右句柄”的行内布局
       return (
-        <div className="node-switch-widget" style={{ paddingBottom: 24 }}>
-          {categories.map((item: any, index: number) => {
-            const rawId = String(item?._id ?? `id_${index}`);
-            const handleId = `${nodeId}__${rawId}`; // 保证同一图内全局唯一，避免潜在冲突
-            const title = item?.name ?? `分类${index + 1}`;
-            return (
-              <div
-                className="item-header"
-                key={handleId}
-                style={{
-                  marginBottom: index === categories.length - 1 ? 12 : 6,
-                }}
-              >
-                <div
-                  className="item-title"
-                  title={title}
-                  style={{ paddingRight: 32 }}
-                >
-                  {title}
-                </div>
-                <SourceHandle
-                  {...sourceHandleProps}
-                  id={handleId}
-                  className="item-handle"
-                  style={{ right: 0 }}
-                  isConnectable={Boolean(isConnectable && !readOnly)}
-                  handleAddNode={(nodeData: any) =>
-                    sourceHandleProps.handleAddNode(nodeData, handleId)
-                  }
-                />
-              </div>
-            );
-          })}
-        </div>
+        <DynamicHandles
+          nodeId={nodeId}
+          categories={categories}
+          SourceHandle={SourceHandle}
+          sourceHandleProps={sourceHandleProps}
+          isConnectable={isConnectable}
+          readOnly={readOnly}
+        />
       );
     },
   },
